@@ -186,6 +186,22 @@ lcase_sse_cond(char *restrict dst, const char *restrict src, size_t len)
          *  - _mm_cmpgt_epi8 (the pcmpgtb instruction)
          *  - _mm_and_si128 (the pand instruction)
          */
+
+        __m128i lower_bit_mask = _mm_set1_epi8(0x20);
+        __m128i lower_bound = _mm_set1_epi8(64);
+        __m128i upper_bound = _mm_set1_epi8(91);
+
+        for (size_t i = 0; i < len; i += 16) {
+                __m128i src_m = LOAD_SI128((__m128i *)(src + i));
+
+                __m128i is_upper_lower = _mm_cmpgt_epi8(src_m,lower_bound);
+                __m128i is_upper_upper = _mm_cmpgt_epi8(upper_bound,src_m);
+                __m128i is_upper = _mm_and_si128(is_upper_lower, is_upper_upper);
+                __m128i final_bit_mask = _mm_and_si128(lower_bit_mask, is_upper);
+                __m128i dst_m = _mm_or_si128(src_m, final_bit_mask);
+
+                STORE_SI128((__m128i *)(dst + i), dst_m);
+        }
 }
 
 static char *

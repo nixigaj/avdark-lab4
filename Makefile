@@ -18,7 +18,7 @@ MATMUL_MODES=SSE BLOCKED SSE_BLOCKED
 
 CC=gcc
 ARCH=-m64 $(SSE_ARCH_FLAGS)
-CFLAGS= -O2 $(ARCH) -g -Wall
+CFLAGS= -O2 -fno-tree-vectorize $(ARCH) -g -Wall
 LDFLAGS=$(ARCH)
 LIBS=-lrt
 
