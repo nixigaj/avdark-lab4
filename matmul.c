@@ -82,6 +82,44 @@ matmul_sse_block(int i, int j, int k)
          * parameter can be used to restrict to which elements the
          * result is stored, all other elements are set to zero.
          */
+        __m128 b0 = _mm_load_ps(&mat_b[k][j]);
+        __m128 b1 = _mm_load_ps(&mat_b[k+1][j]);
+        __m128 b2 = _mm_load_ps(&mat_b[k+2][j]);
+        __m128 b3 = _mm_load_ps(&mat_b[k+3][j]);
+
+        _MM_TRANSPOSE4_PS(b0, b1, b2, b3);
+
+        __m128 a0 = _mm_load_ps(&mat_a[i][k]);
+        __m128 c0 = _mm_load_ps(&mat_c[i][j]);
+        __m128 dp0 = _mm_or_ps(
+                _mm_or_ps(_mm_dp_ps(a0, b0, 0xF1), _mm_dp_ps(a0, b1, 0xF2)),
+                _mm_or_ps(_mm_dp_ps(a0, b2, 0xF4), _mm_dp_ps(a0, b3, 0xF8))
+        );
+        _mm_store_ps(&mat_c[i][j], _mm_add_ps(c0, dp0));
+
+        __m128 a1 = _mm_load_ps(&mat_a[i+1][k]);
+        __m128 c1 = _mm_load_ps(&mat_c[i+1][j]);
+        __m128 dp1 = _mm_or_ps(
+                _mm_or_ps(_mm_dp_ps(a1, b0, 0xF1), _mm_dp_ps(a1, b1, 0xF2)),
+                _mm_or_ps(_mm_dp_ps(a1, b2, 0xF4), _mm_dp_ps(a1, b3, 0xF8))
+        );
+        _mm_store_ps(&mat_c[i+1][j], _mm_add_ps(c1, dp1));
+
+        __m128 a2 = _mm_load_ps(&mat_a[i+2][k]);
+        __m128 c2 = _mm_load_ps(&mat_c[i+2][j]);
+        __m128 dp2 = _mm_or_ps(
+                _mm_or_ps(_mm_dp_ps(a2, b0, 0xF1), _mm_dp_ps(a2, b1, 0xF2)),
+                _mm_or_ps(_mm_dp_ps(a2, b2, 0xF4), _mm_dp_ps(a2, b3, 0xF8))
+        );
+        _mm_store_ps(&mat_c[i+2][j], _mm_add_ps(c2, dp2));
+
+        __m128 a3 = _mm_load_ps(&mat_a[i+3][k]);
+        __m128 c3 = _mm_load_ps(&mat_c[i+3][j]);
+        __m128 dp3 = _mm_or_ps(
+                _mm_or_ps(_mm_dp_ps(a3, b0, 0xF1), _mm_dp_ps(a3, b1, 0xF2)),
+                _mm_or_ps(_mm_dp_ps(a3, b2, 0xF4), _mm_dp_ps(a3, b3, 0xF8))
+        );
+        _mm_store_ps(&mat_c[i+3][j], _mm_add_ps(c3, dp3));
 }
 
 /**
@@ -289,6 +327,17 @@ matmul_sse()
         /* TASK: Implement your simple matrix multiplication using SSE
          * here. (Multiply mat_a and mat_b into mat_c.)
          */
+        for (i = 0; i < SIZE; i++) {
+                for (k = 0; k < SIZE; k++) {
+                        __m128 a = _mm_set1_ps(mat_a[i][k]);
+                        for (j = 0; j < SIZE; j += 4) {
+                                __m128 c = _mm_load_ps(&mat_c[i][j]);
+                                __m128 b = _mm_load_ps(&mat_b[k][j]);
+                                c = _mm_add_ps(c, _mm_mul_ps(a, b));
+                                _mm_store_ps(&mat_c[i][j], c);
+                        }
+                }
+        }
 }
 
 #else
