@@ -43,25 +43,32 @@ matvec_sse()
          * SSE vectors (i.e. 4 floats) */
         assert(!(SIZE & 0x3));
 
-        /* TASK: Implement your SSE version of the matrix-vector
-         * multiplication here. (Multiply mat_a and vec_b into vec_c.)
-         */
-        /* HINT: You might find at least the following instructions
-         * useful:
-         *  - _mm_setzero_ps
-         *  - _mm_load_ps
-         *  - _mm_hadd_ps
-         *  - _mm_cvtss_f32
-         *
-         * HINT: You can create the sum of all elements in a vector
-         * using two hadd instructions.
-         */
-
         for (int i = 0; i < SIZE; ++i) {
+                // Initialize an accumulator vector to all zeros
+                __m128 sum_vec = _mm_setzero_ps();
+
                 for (int j = 0; j < SIZE; j += 4) {
-                        __m128 current_strip = _mm_load_ps(&mat_a[i + j]);
-                        __m128 current_vec = _mm_load_ps(&vec_b[j]);
+                        // Load 4 floats from the matrix row
+                        __m128 a_vec = _mm_load_ps(&mat_a[MINDEX(i, j)]);
+                        // Load 4 floats from the vector
+                        __m128 b_vec = _mm_load_ps(&vec_b[j]);
+
+                        // Multiply and add to the accumulator
+                        __m128 mult_vec = _mm_mul_ps(a_vec, b_vec);
+                        sum_vec = _mm_add_ps(sum_vec, mult_vec);
                 }
+
+                // Now sum_vec contains 4 partial sums: [s0, s1, s2, s3]
+                // We need to add them all together to get a single float.
+
+                // hadd 1: [s0+s1, s2+s3, s0+s1, s2+s3]
+                sum_vec = _mm_hadd_ps(sum_vec, sum_vec);
+
+                // hadd 2: [s0+s1+s2+s3, ..., ..., ...]
+                sum_vec = _mm_hadd_ps(sum_vec, sum_vec);
+
+                // Extract the lowest 32-bit float and store it in vec_c
+                vec_c[i] = _mm_cvtss_f32(sum_vec);
         }
 }
 
